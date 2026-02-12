@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Simpanan</title>
+
+<style>
+  header{
+  background:linear-gradient(135deg,#1e90ff,#4facfe);
+  color:white;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header h3{margin:0}
+
+header button{
+  background:white;
+  color:#1e90ff;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+  
+  
+body{margin:0;font-family:Arial;background:#f4f6f9}
+header{background:#1e90ff;color:white;padding:12px;display:flex;justify-content:space-between}
+button{border:none;padding:8px 12px;border-radius:6px}
+form,table{background:white;margin:10px;padding:10px;border-radius:10px}
+input,select{width:100%;padding:8px;margin:5px 0}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:6px;text-align:center}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3>💳 Simpanan</h3>
+  <div>
+    <button onclick="location.href='dashboard.html'">dashboard</button>
+  </div>
+  <div>
+<button onclick="location.href='transaksi.html'">back</button>
+  </div>
+</header>
+
+<form onsubmit="simpanSimpanan(event)">
+<select id="anggota"></select>
+
+<select id="jenis">
+<option value="Pokok">Pokok</option>
+<option value="Wajib">Wajib</option>
+<option value="Sukarela">Sukarela</option>
+</select>
+
+<input type="number" id="jumlah" placeholder="Jumlah">
+<input type="date" id="tanggal">
+
+<button style="width:100%;background:#1e90ff;color:white">Simpan</button>
+</form>
+
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Nama</th>
+<th>Jenis</th>
+<th>Jumlah</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="listSimpanan"></tbody>
+</table>
+<script src="./js/storage.js"></script>
+<script src="./js/auth.js"></script>
+<script src="./js/anggota.js"></script>
+<script src="./js/simpanan.js"></script>
+
+  <script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  cekLogin();
+  loadAnggota();
+  loadSimpanan();
+});
+</script>
+  <script>
+function rupiah(n){
+ return "Rp "+Number(n||0).toLocaleString("id-ID");
+}
+</script>
+</body>
+</html>

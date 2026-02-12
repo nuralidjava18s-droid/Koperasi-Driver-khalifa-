@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Laporan</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f4f6f9;
+}
+header{
+  background:linear-gradient(135deg,#1e90ff,#4facfe);
+  color:white;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header h3{margin:0}
+
+header button{
+  background:white;
+  color:red;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+
+
+.container{
+  padding:15px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+
+.card{
+  background:white;
+  border-radius:15px;
+  padding:25px 10px;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.15);
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.card:hover{
+  transform:scale(1.03);
+}
+
+.icon{
+  font-size:35px;
+  margin-bottom:10px;
+}
+
+.footer{
+  margin-top:20px;
+  text-align:center;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h3>📌Dashboard Laporan</h3>
+<div>
+<button onclick="location.href='dashboard.html'">Dashboard</button>
+</div>
+</header>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card" onclick="location.href='laporan_anggota.html'">
+<div class="icon">👥</div>
+Laporan Anggota
+</div>
+
+<div class="card" onclick="location.href='laporan_lengkap.html'">
+<div class="icon">💰</div>
+Laporan Kas
+</div>
+
+<div class="card" onclick="location.href='laporan_simpanan.html'">
+<div class="icon">🏦</div>
+Laporan Simpanan
+</div>
+
+<div class="card" onclick="location.href='laporan_pinjaman.html'">
+<div class="icon">📑</div>
+Laporan Pinjaman
+</div>
+
+<div class="card" onclick="location.href='laporan_angsuran.html'">
+<div class="icon">💳</div>
+Laporan Angsuran
+</div>
+
+  <div class="card" onclick="location.href='lap_agt.html'">
+<div class="icon">📊</div>
+    Laporan Per Anggota
+</div>
+  
+</div>
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Angsuran</title>
+
+<style>
+:root{
+ --primary:#1e90ff;
+ --success:#2ecc71;
+ --danger:#ff5252;
+ --bg:#f2f4f8;
+}
+body{margin:0;font-family:Arial;background:var(--bg)}
+header{
+ background:#1e90ff;color:#fff;
+ padding:12px 15px;
+ display:flex;justify-content:space-between;align-items:center
+}
+.container{padding:15px}
+select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px}
+.total{
+ background:#fff;padding:12px;border-radius:12px;
+ margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.08);
+ font-weight:bold
+}
+table{
+ width:100%;border-collapse:collapse;background:#fff;
+ border-radius:12px;overflow:hidden;font-size:13px
+}
+th{background:#f1f5f9;padding:10px}
+td{padding:8px;border-bottom:1px solid #eee;text-align:center}
+tbody tr:nth-child(even){background:#fafafa}
+.lunas{color:green;font-weight:bold}
+.belum{color:red;font-weight:bold}
+button{
+ width:100%;padding:10px;border:none;border-radius:10px;
+ color:#fff;font-weight:bold;margin-top:8px
+}
+.pdf{background:#1e90ff}
+ 
+ header button{
+  background:white;
+  color:red;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h3>📄 Laporan Angsuran</h3>
+ 
+  <div>
+    <button onclick="location.href='dashboard.html'">dashboard</button>
+
+<button onclick="location.href='dashboard_laporan.html'">back</button>
+  </div>
+</header>
+
+<div class="container">
+
+<select id="filterAnggota" onchange="loadLaporan()">
+<option value="">-- Semua Anggota --</option>
+</select>
+
+<div class="total">
+Total Bayar : <span id="totalBayar">Rp 0</span><br>
+Sisa Pinjaman : <span id="sisaPinjaman">Rp 0</span><br>
+Status : <span id="status">-</span>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Anggota</th>
+<th>Bayar</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<button class="pdf" onclick="exportPDF()">📄 Export PDF</button>
+<button class="pdf" onclick="kirimWA()">📤 Kirim ke WhatsApp</button>
+</div>
+
+<script src="js/storage.js"></script>
+
+<script>
+function rupiah(n){
+ return "Rp " + Number(n||0).toLocaleString("id-ID");
+}
+
+/* ======================
+   LOAD ANGGOTA
+====================== */
+function loadAnggota(){
+ const db = getDB();
+ const f = document.getElementById("filterAnggota");
+ f.innerHTML = '<option value="">-- Semua Anggota --</option>';
+
+ (db.anggota || []).forEach(a=>{
+  f.innerHTML += `<option value="${a.id}">${a.nama}</option>`;
+ });
+}
+
+/* ======================
+   LOAD LAPORAN ANGSURAN
+====================== */
+function loadLaporan(){
+ const db = getDB();
+ const tbody = document.getElementById("list");
+ tbody.innerHTML = "";
+
+ let totalBayar = 0;
+ let sisa = 0;
+
+ // 🔥 AMBIL DARI KAS (ANGSURAN)
+ const data = (db.kas || []).filter(k =>
+  k.keterangan && k.keterangan.startsWith("Angsuran")
+ );
+
+ data.forEach(k=>{
+  const nama = k.keterangan.replace("Angsuran ","");
+  const anggota = db.anggota.find(a=>a.nama === nama);
+
+  if(filterAnggota.value && anggota?.id !== filterAnggota.value) return;
+
+  totalBayar += Number(k.jumlah || 0);
+
+  tbody.innerHTML += `
+   <tr>
+    <td>${k.tanggal}</td>
+    <td>${nama}</td>
+    <td>${rupiah(k.jumlah)}</td>
+   </tr>`;
+ });
+
+ // sisa pinjaman
+ if(filterAnggota.value){
+  (db.pinjaman || [])
+   .filter(p=>p.anggota_id === filterAnggota.value)
+   .forEach(p=> sisa += Number(p.sisa || 0));
+ }
+
+ document.getElementById("totalBayar").innerText = rupiah(totalBayar);
+ document.getElementById("sisaPinjaman").innerText = rupiah(sisa);
+
+ const statusEl = document.getElementById("status");
+ statusEl.innerText = (sisa <= 0 && totalBayar > 0) ? "LUNAS" : "BELUM LUNAS";
+ statusEl.className = sisa <= 0 ? "lunas" : "belum";
+}
+
+/* ======================
+   INIT
+====================== */
+document.addEventListener("DOMContentLoaded",()=>{
+ loadAnggota();
+ loadLaporan();
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+function tanggalIndo(){
+ const d = new Date();
+ return d.toLocaleDateString("id-ID",{
+  day:"2-digit",
+  month:"long",
+  year:"numeric"
+ });
+}
+
+function exportPDF(){
+
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+
+ const db = getDB();
+ const anggotaID = filterAnggota.value;
+ const anggotaNama = anggotaID
+  ? db.anggota.find(a=>a.id===anggotaID)?.nama
+  : "Semua Anggota";
+
+ /* =====================
+    HEADER
+ ===================== */
+ doc.setFontSize(14);
+ doc.text("LAPORAN ANGSURAN",14,15);
+
+ doc.setFontSize(10);
+ doc.text("Anggota : " + anggotaNama,14,22);
+ doc.text("Tanggal Cetak : " + tanggalIndo(),14,28);
+
+ /* =====================
+    DATA
+ ===================== */
+ let rows = [];
+ let totalBayar = 0;
+
+ (db.kas||[])
+  .filter(k=>k.keterangan?.startsWith("Angsuran"))
+  .forEach(k=>{
+    const nama = k.keterangan.replace("Angsuran ","");
+    const anggota = db.anggota.find(a=>a.nama===nama);
+
+    if(anggotaID && anggota?.id !== anggotaID) return;
+
+    totalBayar += Number(k.jumlah||0);
+
+    rows.push([
+     k.tanggal || "-",
+     nama,
+     rupiah(k.jumlah)
+    ]);
+  });
+
+ /* =====================
+    TABLE
+ ===================== */
+ doc.autoTable({
+  startY:34,
+  head:[["Tanggal","Anggota","Jumlah"]],
+  body: rows.length ? rows : [["-","Belum ada data","-"]],
+  styles:{fontSize:10},
+  headStyles:{fillColor:[30,144,255]}
+ });
+
+ const y = doc.lastAutoTable.finalY + 8;
+ doc.text("Total Bayar : " + rupiah(totalBayar),14,y);
+
+ /* =====================
+    SIMPAN & PREVIEW
+ ===================== */
+ window.pdfAngsuran = doc;
+
+ // 🔥 PALING AMAN UNTUK WEB2APP
+ const blobUrl = doc.output("bloburl");
+ window.open(blobUrl,"_blank");
+}
+ 
+
+function formatTanggalFile(){
+ const d = new Date();
+ return d.toISOString().slice(0,10); // 2026-02-10
+}
+
+function kirimWA(){
+
+ if(!window.pdfAngsuran){
+  alert("Preview PDF dulu");
+  return;
+ }
+
+ const db = getDB();
+ const anggotaID = filterAnggota.value;
+
+ const namaAnggota = anggotaID
+  ? db.anggota.find(a=>a.id===anggotaID)?.nama.replace(/ /g,"_")
+  : "Semua_Anggota";
+
+ const fileName =
+  "Laporan_Angsuran_" + namaAnggota + "_" + formatTanggalFile() + ".pdf";
+
+ const pdfBlob = window.pdfAngsuran.output("blob");
+
+ const file = new File(
+  [pdfBlob],
+  fileName,
+  { type:"application/pdf" }
+ );
+
+ if(navigator.canShare && navigator.canShare({ files:[file] })){
+  navigator.share({
+   title:"Laporan Angsuran",
+   text:"Laporan pembayaran angsuran koperasi",
+   files:[file]
+  });
+ }else{
+  alert("Perangkat tidak mendukung kirim PDF ke WhatsApp");
+ }
+}
+ 
+</script>
+</body>
+</html>

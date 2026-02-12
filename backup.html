@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backup & Restore</title>
+
+<style>
+:root{
+  --primary:#1e90ff;
+  --danger:#ff5252;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#333;
+  --border:#e0e0e0;
+}
+
+*{ box-sizing:border-box }
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+}
+
+/* HEADER */
+header{
+  background:var(--primary);
+  color:white;
+  padding:14px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header h2{
+  margin:0;
+  font-size:18px;
+}
+
+header button{
+  background:var(--danger);
+  border:none;
+  color:white;
+  padding:8px 14px;
+  border-radius:8px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+/* CONTAINER */
+.container{
+  padding:20px;
+  display:flex;
+  justify-content:center;
+}
+
+/* CARD */
+.card{
+  background:var(--card);
+  width:100%;
+  max-width:420px;
+  border-radius:14px;
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
+  padding:20px;
+  text-align:center;
+}
+
+.card h3{
+  margin-top:0;
+  font-size:16px;
+}
+
+/* BUTTON */
+.btn{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  font-size:14px;
+  border:none;
+  border-radius:10px;
+  background:var(--primary);
+  color:white;
+  cursor:pointer;
+}
+
+.btn.danger{
+  background:var(--danger);
+}
+
+.btn:hover{ opacity:.9 }
+
+hr{
+  border:none;
+  border-top:1px solid var(--border);
+  margin:20px 0;
+}
+
+.small{
+  font-size:12px;
+  color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>Backup & Restore</h2>
+  <button onclick="location.href='dashboard.html'">Dashboard</button>
+</header>
+
+<div class="container">
+  <div class="card">
+
+    <h3>📦 Backup Data</h3>
+
+    <button class="btn" onclick="backupWA()">📤 Backup ke WhatsApp</button>
+
+    <p class="small">
+      Data akan dikirim sebagai teks ke WhatsApp.<br>
+      Simpan di chat sendiri.
+    </p>
+
+    <hr>
+
+    <h3>♻️ Restore Data</h3>
+
+    <button class="btn danger" onclick="restoreWA()">📥 Restore dari Backup</button>
+
+    <p class="small">
+      Paste data backup tanpa mengubah isinya.
+    </p>
+
+  </div>
+</div>
+
+<!-- SCRIPT -->
+<script src="js/storage.js"></script>
+<script src="js/backup.js"></script>
+
+</body>
+</html>

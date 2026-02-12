@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Simpanan</title>
+
+<style>
+:root{
+ --primary:#1e90ff;
+ --primary2:#4facfe;
+ --success:#2ecc71;
+ --danger:#ff5252;
+ --bg:#f2f4f8;
+}
+
+body{
+ margin:0;
+ font-family:Arial;
+ background:var(--bg);
+}
+
+/* HEADER */
+ header{
+  background:#1e90ff;
+  color:white;
+  padding:12px 15px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+
+header h3{
+  margin:0;
+  font-size:16px;
+}
+
+header button{
+  background:white;
+  border:none;
+  color:red;
+  padding:7px 12px;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+/* CONTAINER */
+.container{padding:15px}
+
+/* FILTER */
+select{
+ width:100%;
+ padding:10px;
+ border-radius:8px;
+ border:1px solid #ddd;
+ margin-bottom:8px;
+}
+
+/* CARD TOTAL */
+.total{
+ background:white;
+ padding:12px;
+ border-radius:12px;
+ margin-bottom:10px;
+ box-shadow:0 2px 6px rgba(0,0,0,.08);
+ font-weight:bold;
+}
+
+/* TABLE */
+table{
+ width:100%;
+ border-collapse:collapse;
+ background:white;
+ border-radius:12px;
+ overflow:hidden;
+ font-size:13px;
+}
+
+th{
+ background:#f1f5f9;
+ padding:10px;
+}
+
+td{
+ padding:8px;
+ border-bottom:1px solid #eee;
+ text-align:center;
+}
+
+tbody tr:nth-child(even){background:#fafafa}
+
+/* BUTTON */
+button{
+ width:100%;
+ padding:10px;
+ border:none;
+ border-radius:10px;
+ color:white;
+ font-weight:bold;
+ margin-top:8px;
+}
+
+.pdf{background:var(--primary)}
+.wa{background:#25D366}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+<header>
+<h3>📄 Laporan Simpanan</h3>
+ <div>
+    <button onclick="location.href='dashboard.html'">dashboard</button>
+    <button onclick="location.href='dashboard_laporan.html'">back</button>
+  </div>
+</header>
+
+<div class="container">
+
+<select id="filterAnggota" onchange="loadLaporan()">
+<option value="">-- Semua Anggota --</option>
+</select>
+
+<select id="filterJenis" onchange="loadLaporan()">
+<option value="">-- Semua Jenis --</option>
+<option value="Pokok">Pokok</option>
+<option value="Wajib">Wajib</option>
+<option value="Sukarela">Sukarela</option>
+</select>
+
+<div class="total">
+Total Simpanan : <span id="total">Rp 0</span><br>
+Pokok : <span id="pokok">Rp 0</span><br>
+Wajib : <span id="wajib">Rp 0</span><br>
+Sukarela : <span id="sukarela">Rp 0</span>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Anggota</th>
+<th>Jenis</th>
+<th>Jumlah</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<button class="pdf" onclick="exportPDF()">📄 Export PDF</button>
+<button class="wa" onclick="exportWA()">📲 Export WhatsApp</button>
+
+</div>
+
+
+<script src="js/storage.js"></script>
+ <script>
+
+function getDB(){
+ let db=localStorage.getItem("koperasi_db");
+ if(!db){
+   return {anggota:[],simpanan:[]};
+ }
+ return JSON.parse(db);
+}
+
+const filterAnggota=document.getElementById("filterAnggota");
+const filterJenis=document.getElementById("filterJenis");
+
+const totalEl=document.getElementById("total");
+const pokokEl=document.getElementById("pokok");
+const wajibEl=document.getElementById("wajib");
+const sukarelaEl=document.getElementById("sukarela");
+
+let lastData=[];
+
+function rupiah(n){
+ return "Rp "+Number(n||0).toLocaleString("id-ID");
+}
+
+/* LOAD ANGGOTA */
+function loadAnggota(){
+ const db=getDB();
+ const f=document.getElementById("filterAnggota");
+
+ f.innerHTML='<option value="">-- Semua Anggota --</option>';
+
+ db.anggota.forEach(a=>{
+  f.innerHTML+=`<option value="${a.id}">${a.nama}</option>`;
+ });
+}
+/* LOAD LAPORAN */
+function loadLaporan(){
+ const db=getDB();
+ const tbody=document.getElementById("list");
+ tbody.innerHTML="";
+
+ let total=0,pokok=0,wajib=0,sukarela=0;
+
+ lastData = (db.simpanan || []).filter(s=>{
+  return (!filterAnggota.value||s.anggota_id===filterAnggota.value)&&
+         (!filterJenis.value||s.jenis===filterJenis.value);
+ });
+
+ lastData.forEach(s=>{
+  const a=db.anggota.find(x=>x.id===s.anggota_id);
+  const j=Number(s.jumlah||0);
+
+  total+=j;
+  if(s.jenis==="Pokok") pokok+=j;
+  if(s.jenis==="Wajib") wajib+=j;
+  if(s.jenis==="Sukarela") sukarela+=j;
+
+  tbody.innerHTML+=`
+   <tr>
+    <td>${s.tanggal||""}</td>
+    <td>${a?a.nama:""}</td>
+    <td>${s.jenis}</td>
+    <td>${rupiah(j)}</td>
+   </tr>`;
+ });
+
+ totalEl.innerText=rupiah(total);
+ pokokEl.innerText=rupiah(pokok);
+ wajibEl.innerText=rupiah(wajib);
+ sukarelaEl.innerText=rupiah(sukarela);
+}
+/* PDF */
+ 
+ function tanggalIndo(){
+ const d = new Date();
+ return d.toLocaleDateString("id-ID",{
+  day:"2-digit",
+  month:"long",
+  year:"numeric"
+ });
+}
+
+function tanggalFile(){
+ return new Date().toISOString().slice(0,10);
+}
+ 
+ let pdfSimpanan = null;
+
+function exportPDF(){
+
+ if(!lastData.length){
+  alert("Data kosong");
+  return;
+ }
+
+ const db = getDB();
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+
+ const rows = [];
+ let total = 0;
+
+ lastData.forEach(s=>{
+  const a = db.anggota.find(x=>x.id===s.anggota_id);
+  const j = Number(s.jumlah||0);
+  total += j;
+
+  rows.push([
+   s.tanggal || "",
+   a ? a.nama : "-",
+   s.jenis,
+   rupiah(j)
+  ]);
+ });
+
+ /* ===== HEADER ===== */
+ doc.setFontSize(14);
+ doc.text("LAPORAN SIMPANAN KOPERASI",14,14);
+
+ doc.setFontSize(10);
+ doc.text("Tanggal Cetak : " + tanggalIndo(),14,21);
+
+ /* ===== TABLE ===== */
+ doc.autoTable({
+  startY:26,
+  head:[["Tanggal","Anggota","Jenis","Jumlah"]],
+  body: rows,
+  styles:{ fontSize:9 },
+  headStyles:{ fillColor:[30,144,255] }
+ });
+
+ /* ===== TOTAL ===== */
+ let y = doc.lastAutoTable.finalY + 8;
+ doc.text("Total Simpanan : " + rupiah(total),14,y);
+
+ /* ===== SIMPAN UNTUK SHARE ===== */
+ pdfSimpanan = doc;
+
+ /* ===== PREVIEW (AMAN ANDROID / WEB2APP) ===== */
+ const blobUrl = doc.output("bloburl");
+ window.open(blobUrl,"_blank");
+}
+ 
+ function exportWA(){
+
+ if(!pdfSimpanan){
+  alert("Preview PDF dulu");
+  return;
+ }
+
+ const db = getDB();
+ let namaFile = "Laporan_Simpanan_Semua_" + tanggalFile() + ".pdf";
+
+ if(filterAnggota.value){
+  const ag = db.anggota.find(a=>a.id===filterAnggota.value);
+  if(ag){
+   namaFile = "Laporan_Simpanan_" +
+     ag.nama.replace(/\s+/g,"_") + "_" +
+     tanggalFile() + ".pdf";
+  }
+ }
+
+ const blob = pdfSimpanan.output("blob");
+ const file = new File([blob], namaFile, {type:"application/pdf"});
+
+ if(navigator.canShare && navigator.canShare({files:[file]})){
+  navigator.share({
+   title:"Laporan Simpanan",
+   text:"Laporan simpanan koperasi",
+   files:[file]
+  });
+ }else{
+  alert("Perangkat tidak mendukung kirim PDF");
+ }
+}
+
+ document.addEventListener("DOMContentLoaded",()=>{
+ loadAnggota();
+ loadLaporan();
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pencairan Simpanan Sukarela</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#f4f6f9}
+header{background:#1e90ff;color:white;padding:12px;display:flex;justify-content:space-between}
+form,table{background:white;margin:10px;padding:12px;border-radius:10px}
+select,input,button{width:100%;padding:10px;margin-top:8px}
+button{background:#ff5252;color:white;border:none;border-radius:8px;font-weight:bold}
+.info{background:#e3f2fd;padding:10px;border-radius:8px;margin-top:8px;font-weight:bold}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3>💸 Pencairan Sukarela</h3>
+  <button onclick="location.href='transaksi.html'">Back</button>
+</header>
+
+<form onsubmit="cairkan(event)">
+  <label>Anggota</label>
+  <select id="anggota" onchange="hitungSaldo()"></select>
+
+  <div class="info">
+    Saldo Sukarela: <span id="saldo">Rp 0</span>
+  </div>
+
+  <label>Jumlah Cair</label>
+  <input type="number" id="jumlah" placeholder="Masukkan jumlah">
+
+  <button>Cairkan</button>
+</form>
+
+<script src="js/storage.js"></script>
+<script src="js/pencairan.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  loadAnggotaPencairan();
+});
+</script>
+
+</body>
+</html>

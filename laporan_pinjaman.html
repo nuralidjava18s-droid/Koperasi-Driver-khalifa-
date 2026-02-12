@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Pinjaman</title>
+
+<style>
+:root{
+  --primary:#1e90ff;
+  --primary2:#4facfe;
+  --danger:#ff5252;
+  --success:#2ecc71;
+  --bg:#f2f4f8;
+}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+}
+
+/* HEADER */
+  
+  header{
+  background:#1e90ff;
+  color:white;
+  padding:12px 15px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+
+header h3{
+  margin:0;
+  font-size:16px;
+}
+
+header button{
+  background:white;
+  border:none;
+  color:red;
+  padding:7px 12px;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+/* CONTAINER */
+.container{padding:15px}
+
+/* FILTER */
+select{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  margin-bottom:10px;
+}
+
+/* CARD TOTAL */
+.total{
+  background:white;
+  padding:12px;
+  border-radius:12px;
+  margin:10px 0;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+  font-weight:bold;
+}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  font-size:13px;
+}
+
+th{
+  background:#f1f5f9;
+  padding:10px;
+}
+
+td{
+  padding:8px;
+  border-bottom:1px solid #eee;
+  text-align:center;
+}
+
+tbody tr:nth-child(even){background:#fafafa}
+
+.lunas{color:green;font-weight:bold}
+.aktif{color:red;font-weight:bold}
+
+/* BUTTON */
+button.export{
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  color:white;
+  font-weight:bold;
+}
+
+.pdf{background:var(--primary)}
+.wa{background:#25D366}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+<header>
+<h3>📄 Laporan Pinjaman</h3>
+  <div>
+    <button onclick="location.href='dashboard.html'">dashboard</button>
+    <button onclick="location.href='dashboard_laporan.html'">back</button>
+  </div>
+</header>
+
+<div class="container">
+
+<select id="filterAnggota" onchange="loadLaporan()">
+<option value="">-- Semua Anggota --</option>
+</select>
+
+<div class="total">
+Total Pinjaman : <span id="totalPinjaman">Rp 0</span><br>
+Sisa Pinjaman : <span id="totalSisa">Rp 0</span>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Anggota</th>
+<th>Pinjaman</th>
+<th>Bunga</th>
+<th>Tenor</th>
+<th>Sisa</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<button class="export pdf" onclick="exportPDF()">📄 Export PDF</button>
+<button class="export wa" onclick="kirimWA()">📤 Kirim ke WhatsApp</button>
+</div>
+
+<script src="js/storage.js"></script>
+
+<script>
+
+let lastData=[];
+
+/* RUPIAH */
+function rupiah(n){
+ return "Rp "+Number(n||0).toLocaleString("id-ID");
+}
+
+/* LOAD ANGGOTA */
+function loadAnggota(){
+ const db=getDB();
+ const f=document.getElementById("filterAnggota");
+
+ db.anggota.forEach(a=>{
+  f.innerHTML+=`<option value="${a.id}">${a.nama}</option>`;
+ });
+}
+
+/* LOAD LAPORAN */
+function loadLaporan(){
+ const db=getDB();
+ const tbody=document.getElementById("list");
+ tbody.innerHTML="";
+
+ let totalPin=0;
+ let totalSisa=0;
+
+ lastData=(db.pinjaman||[]).filter(p=>{
+  return !filterAnggota.value || p.anggota_id===filterAnggota.value;
+ });
+
+ lastData.forEach(p=>{
+  const a=db.anggota.find(x=>x.id===p.anggota_id);
+
+  const total = Number(p.jumlah||0);
+  const sisa  = Number(p.sisa||0);
+
+  totalPin += total;
+  totalSisa += sisa;
+
+  tbody.innerHTML+=`
+  <tr>
+   <td>${a?a.nama:""}</td>
+   <td>${rupiah(total)}</td>
+   <td>-</td>
+   <td>-</td>
+   <td>${rupiah(sisa)}</td>
+   <td class="${sisa==0?"lunas":"aktif"}">${sisa==0?"LUNAS":"AKTIF"}</td>
+  </tr>`;
+ });
+document.getElementById("totalPinjaman").innerText = rupiah(totalPin);
+document.getElementById("totalSisa").innerText = rupiah(totalSisa);
+ }
+
+/* EXPORT PDF */
+  
+  function tanggalIndo(){
+ const d = new Date();
+ return d.toLocaleDateString("id-ID",{
+  day:"2-digit",
+  month:"long",
+  year:"numeric"
+ });
+}
+
+function tanggalFile(){
+ return new Date().toISOString().slice(0,10);
+}
+  
+function exportPDF(){
+
+ if(!lastData.length){
+  alert("Data kosong");
+  return;
+ }
+
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+ const db = getDB();
+
+ let totalPin = 0;
+ let totalSisa = 0;
+ const rows = [];
+
+ lastData.forEach(p=>{
+  const ag = db.anggota.find(a=>a.id==p.anggota_id);
+  const nama = ag ? ag.nama : "-";
+
+  const jumlah = Number(p.jumlah||0);
+  const sisa   = Number(p.sisa||0);
+
+  totalPin += jumlah;
+  totalSisa += sisa;
+
+  rows.push([
+   nama,
+   rupiah(jumlah),
+   p.bunga ? p.bunga+"%" : "-",
+   p.tenor || "-",
+   rupiah(sisa),
+   sisa==0 ? "LUNAS" : "AKTIF"
+  ]);
+ });
+
+ /* ================= HEADER ================= */
+ doc.setFontSize(14);
+ doc.text("LAPORAN PINJAMAN KOPERASI",14,15);
+
+ doc.setFontSize(10);
+ doc.text("Tanggal Cetak : " + tanggalIndo(),14,22);
+
+ doc.text("Total Pinjaman : " + rupiah(totalPin),14,28);
+ doc.text("Total Sisa     : " + rupiah(totalSisa),14,34);
+
+ /* ================= TABLE ================= */
+ doc.autoTable({
+  startY:40,
+  head:[["Anggota","Pinjaman","Bunga","Tenor","Sisa","Status"]],
+  body: rows,
+  styles:{ fontSize:9 },
+  headStyles:{ fillColor:[30,144,255] }
+ });
+
+ /* ================= SIMPAN UNTUK SHARE ================= */
+ window.pdfPinjaman = doc;
+
+ /* ================= PREVIEW (WEB2APP SAFE) ================= */
+ const blobUrl = doc.output("bloburl");
+ window.open(blobUrl, "_blank");
+}
+  
+  function kirimWA(){
+
+ if(!window.pdfPinjaman){
+  alert("Preview PDF dulu");
+  return;
+ }
+
+ let namaFile = "Laporan_Pinjaman_Semua_"+tanggalFile()+".pdf";
+
+ if(filterAnggota.value){
+  const db = getDB();
+  const ag = db.anggota.find(a=>a.id==filterAnggota.value);
+  if(ag){
+   namaFile = "Laporan_Pinjaman_"+ag.nama.replace(/\s+/g,"_")+"_"+tanggalFile()+".pdf";
+  }
+ }
+
+ const blob = window.pdfPinjaman.output("blob");
+ const file = new File([blob], namaFile, {type:"application/pdf"});
+
+ if(navigator.canShare && navigator.canShare({files:[file]})){
+  navigator.share({
+   title:"Laporan Pinjaman",
+   text:"Laporan pinjaman koperasi",
+   files:[file]
+  });
+ }else{
+  alert("Perangkat tidak mendukung kirim PDF");
+ }
+}
+  
+  
+/* INIT */
+document.addEventListener("DOMContentLoaded",()=>{
+ loadAnggota();
+ loadLaporan();
+});
+
+</script>
+
+</body>
+</html>

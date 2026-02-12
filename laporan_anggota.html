@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Anggota</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f4f6f9;
+}
+header{
+  background:#1e90ff;
+  color:white;
+  padding:12px 15px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header h3{
+  margin:0;
+  font-size:16px;
+}
+
+header button{
+  background:white;
+  border:none;
+  color:red;
+  padding:7px 12px;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+}
+
+.card{
+  background:white;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.1);
+  font-weight:bold;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  border-radius:10px;
+  overflow:hidden;
+  font-size:13px;
+}
+th{
+  background:#eee;
+  padding:10px;
+}
+td{
+  padding:8px;
+  border-bottom:1px solid #ddd;
+  text-align:center;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  margin-top:8px;
+  color:white;
+  font-weight:bold;
+}
+
+.pdf{background:#1e90ff}
+.wa{background:#25D366}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+<header>
+<h3>📋 Laporan Anggota</h3>
+  <div>
+    <button onclick="location.href='dashboard.html'">dashboard</button>
+<button onclick="location.href='dashboard_laporan.html'">back</button>
+  </div>
+</header>
+
+<div class="container">
+
+<input type="text" id="search" placeholder="Cari nama / ID..." oninput="loadAnggota()">
+
+<div class="card">
+Total Anggota : <span id="total">0</span>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Nama</th>
+<th>Alamat</th>
+<th>Telp</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<button class="pdf" onclick="exportPDF()">📄 Export PDF</button>
+<button class="wa" onclick="exportWA()">📲 Kirim WhatsApp</button>
+
+</div>
+
+<script src="js/storage.js"></script>
+
+<script>
+let dataLaporan=[];
+
+function loadAnggota(){
+  const db = getDB();
+  const key = search.value.toLowerCase();
+  list.innerHTML="";
+  dataLaporan=[];
+
+  db.anggota
+    .filter(a =>
+      a.nama.toLowerCase().includes(key) ||
+      a.id.toLowerCase().includes(key)
+    )
+    .forEach(a=>{
+      dataLaporan.push(a);
+      list.innerHTML+=`
+        <tr>
+          <td>${a.id}</td>
+          <td>${a.nama}</td>
+          <td>${a.alamat}</td>
+          <td>${a.telp}</td>
+        </tr>
+      `;
+    });
+
+  total.innerText = dataLaporan.length;
+}
+
+  function tanggalIndo(){
+ const d = new Date();
+ return d.toLocaleDateString("id-ID",{
+  day:"2-digit",
+  month:"long",
+  year:"numeric"
+ });
+}
+
+function tanggalFile(){
+ return new Date().toISOString().slice(0,10);
+}
+  
+/* EXPORT PDF */
+let pdfAnggota = null;
+
+function exportPDF(){
+
+ if(!dataLaporan.length){
+  alert("Data kosong");
+  return;
+ }
+
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+
+ /* ===== HEADER ===== */
+ doc.setFontSize(14);
+ doc.text("LAPORAN DATA ANGGOTA",14,14);
+
+ doc.setFontSize(10);
+ doc.text("Tanggal Cetak : " + tanggalIndo(),14,20);
+ doc.text("Total Anggota : " + dataLaporan.length,14,25);
+
+ /* ===== TABLE ===== */
+ doc.autoTable({
+  startY:30,
+  head:[["ID","Nama","Alamat","Telp"]],
+  body:dataLaporan.map(a=>[
+   a.id,
+   a.nama,
+   a.alamat,
+   a.telp
+  ]),
+  styles:{ fontSize:9 },
+  headStyles:{ fillColor:[30,144,255] }
+ });
+
+ /* ===== SIMPAN UNTUK SHARE ===== */
+ pdfAnggota = doc;
+
+ /* ===== PREVIEW ===== */
+ const blobUrl = doc.output("bloburl");
+ window.open(blobUrl,"_blank");
+}
+  
+  function exportWA(){
+
+ if(!pdfAnggota){
+  alert("Preview PDF dulu");
+  return;
+ }
+
+ const fileName = "Laporan_Anggota_" + tanggalFile() + ".pdf";
+ const blob = pdfAnggota.output("blob");
+
+ const file = new File(
+  [blob],
+  fileName,
+  { type:"application/pdf" }
+ );
+
+ if(navigator.canShare && navigator.canShare({ files:[file] })){
+  navigator.share({
+   title:"Laporan Anggota",
+   text:"Laporan data anggota koperasi",
+   files:[file]
+  });
+ }else{
+  alert("Perangkat tidak mendukung kirim PDF ke WhatsApp");
+ }
+}
+  
+  
+
+document.addEventListener("DOMContentLoaded",loadAnggota);
+</script>
+
+</body>
+</html>

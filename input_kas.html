@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>input Kas</title>
+
+<style>
+:root{
+  --primary:#1e90ff;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --success:#2ecc71;
+  --danger:#e74c3c;
+  --text:#333;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Segoe UI, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  background:linear-gradient(135deg,#1e90ff,#4facfe);
+  color:white;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+header h3{margin:0}
+
+header button{
+  background:white;
+  color:#1e90ff;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.container{
+  padding:10px;
+  max-width:1100px;
+  margin:auto;
+}
+
+.box{
+  background:var(--card);
+  padding:10px;
+  border-radius:12px;
+  margin-bottom:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+.summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.summary div{
+  padding:18px;
+  border-radius:14px;
+  text-align:center;
+  font-weight:bold;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+.summary span{
+  display:block;
+  font-size:20px;
+  margin-top:6px;
+}
+
+.in{background:#eafaf1;color:var(--success)}
+.out{background:#fdecea;color:var(--danger)}
+.summary div:not(.in):not(.out){
+  background:#eef5ff;
+  color:#1e90ff;
+}
+
+/* FORM */
+input,select{
+  width:100%;
+  padding:8px;
+  margin:4px 0;
+  border-radius:4px;
+  border:1px solid #ccc;
+}
+header button{
+  background:#ff5252;
+  border:none;
+  color:white;
+  padding:6px 10px;
+  border-radius:5px;
+}
+button{
+  padding:8px 14px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+button:hover{opacity:.9}
+
+button[onclick]
+  {background:var(--primary);
+  color:white;
+}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+th{
+  background:#f0f3f7;
+  padding:10px;
+}
+
+td{
+  padding:8px;
+  border-bottom:1px solid #eee;
+}
+
+tr:hover{background:#f9fbfd}
+
+/* AKSI */
+td button{
+  margin:2px;
+  font-size:12px;
+}
+
+td button:first-child{
+  background:#f1c40f;
+  color:#000;
+}
+
+td button:last-child{
+  background:#e74c3c;
+  color:white;
+}
+
+/* EXPORT BUTTON */
+.export{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.export button{
+  background:#2d3436;
+  color:white;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+  header h3{font-size:16px}
+}
+</style>
+  <script type="module" src="js/firebase.js"></script>
+  </head>
+
+<body>
+
+  <!-- INPUT KAS -->
+  
+
+ <header>
+    <h3>Input Kas manual</h3>
+ 
+<button onclick="location.href='dashboard.html'">Dashboard</button>
+
+ </header>
+
+<div class="container">
+<div class="box">
+ 
+
+  <label>Tanggal</label><br>
+  <input type="date" id="tglKas"><br><br>
+
+  <label>Keterangan</label><br>
+  <input type="text" id="ketKas" placeholder="Contoh: Biaya listrik"><br><br>
+
+  <label>Jenis</label><br>
+  <select id="jenisKas">
+    <option value="MASUK">Kas Masuk</option>
+    <option value="KELUAR">Kas Keluar</option>
+  </select><br><br>
+
+  <label>Jumlah</label><br>
+  <input type="number" id="jumlahKas"><br><br>
+
+  <button onclick="simpanKas()">💾 Simpan</button>
+   </div>
+    
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Keterangan</th>
+          <th>Masuk</th>
+          <th>Keluar</th>
+        </tr>
+      </thead>
+      <tbody id="listKas"></tbody>
+    </table>
+  <div>
+    <button onclick="exportPDF()">📄 Export PDF</button>
+  <button onclick="exportSemuaLaporan()">📊 Export Semua Laporan (PDF)</button>
+  </div>
+  </div>
+
+<!-- LIBRARY PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+function rupiah(n){
+ return "Rp "+Number(n||0).toLocaleString("id-ID");
+}
+
+/* STORAGE */
+
+
+/* SIMPAN KAS */
+async function simpanKas(){
+ const kas = {
+   tanggal: tglKas.value,
+   keterangan: ketKas.value,
+   jenis: jenisKas.value,
+   jumlah: Number(jumlahKas.value)
+ };
+
+ if(window.addKasFirebase){
+   await window.addKasFirebase(kas);
+   loadKas(); // reload dari Firebase
+ }else{
+   alert("❌ Firebase belum siap");
+ }
+}
+/* LOAD KAS */
+
+async function loadKas(){
+  listKas.innerHTML="";
+  let kas = [];
+
+  if(window.loadKasFirebase){
+    kas = await loadKasFirebase();
+  }
+
+  kas.forEach(k=>{
+    listKas.innerHTML += `
+      <tr>
+        <td>${k.tanggal || "-"}</td>
+        <td>${k.keterangan || "-"}</td>
+        <td>${k.jenis==="MASUK"?rupiah(k.jumlah):"-"}</td>
+        <td>${k.jenis==="KELUAR"?rupiah(k.jumlah):"-"}</td>
+      </tr>
+    `;
+  });
+}
+  
+  
+/* EXPORT KAS PDF */
+async function exportPDF(){
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+ const kas = await loadKasFirebase();
+
+ doc.text("LAPORAN KAS",14,15);
+
+ const body=[];
+ kas.forEach(k=>{
+  body.push([
+    k.tanggal,
+    k.keterangan,
+    k.jenis==="MASUK"?rupiah(k.jumlah):"-",
+    k.jenis==="KELUAR"?rupiah(k.jumlah):"-"
+  ]);
+ });
+
+ doc.autoTable({
+  startY:25,
+  head:[["Tanggal","Keterangan","Masuk","Keluar"]],
+  body: body.length?body:[["-","Belum ada data","-","-"]]
+ });
+
+ window.open(doc.output("bloburl"),"_blank");
+}
+  
+/* EXPORT SEMUA LAPORAN */
+
+async function exportSemuaLaporan(){
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+ const kas = await loadKasFirebase();
+
+ let masuk=0, keluar=0;
+ kas.forEach(k=>{
+  if(k.jenis==="MASUK") masuk+=k.jumlah;
+  if(k.jenis==="KELUAR") keluar+=k.jumlah;
+ });
+
+ doc.text("LAPORAN LENGKAP KOPERASI",14,15);
+
+ doc.autoTable({
+  startY:25,
+  head:[["Keterangan","Nilai"]],
+  body:[
+   ["Kas Masuk", rupiah(masuk)],
+   ["Kas Keluar", rupiah(keluar)],
+   ["Saldo", rupiah(masuk-keluar)]
+  ]
+ });
+
+ window.open(doc.output("bloburl"),"_blank");
+}
+document.addEventListener("DOMContentLoaded", loadKas);
+</script>
+  
+</body>
+</html>

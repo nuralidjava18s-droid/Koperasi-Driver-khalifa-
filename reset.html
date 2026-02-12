@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Factory Reset Koperasi</title>
+<style>
+body{
+ font-family:Arial;
+ background:#f4f6f9;
+ padding:40px;
+ text-align:center;
+}
+.card{
+ background:white;
+ padding:25px;
+ border-radius:16px;
+ max-width:400px;
+ margin:auto;
+ box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+input{
+ width:100%;
+ padding:12px;
+ margin-top:10px;
+ border-radius:8px;
+ border:1px solid #ccc;
+}
+button{
+ width:100%;
+ padding:16px;
+ font-size:16px;
+ border:none;
+ border-radius:12px;
+ background:#e74c3c;
+ color:white;
+ margin-top:14px;
+ font-weight:bold;
+ cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>🔥 FACTORY RESET</h2>
+
+<p>
+Menghapus <b>SELURUH</b> database koperasi<br>
+(simpanan, pinjaman, kas, angsuran)
+</p>
+
+<input type="password" id="password" placeholder="Masukkan password reset">
+
+<button onclick="reset()">RESET SEKARANG</button>
+</div>
+
+<script>
+const RESET_PASSWORD = "admin123"; // 🔑 ganti password di sini
+
+function reset(){
+
+ const pass = document.getElementById("password").value;
+
+ if(!pass){
+  alert("Masukkan password!");
+  return;
+ }
+
+ if(pass !== RESET_PASSWORD){
+  alert("Password salah!");
+  return;
+ }
+
+ if(!confirm("Yakin ingin menghapus SEMUA data?")){
+  return;
+ }
+
+ localStorage.removeItem("koperasi_db");
+ localStorage.removeItem("koperasi_login");
+
+ alert("RESET SELESAI");
+
+ location.href="index.html";
+}
+</script>
+
+</body>
+</html>

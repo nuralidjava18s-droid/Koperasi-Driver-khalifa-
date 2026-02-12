@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Koperasi</title>
+<style>
+  
+:root{
+  --primary:#1e90ff;
+  --danger:#ff5252;
+  --bg:#f4f6f9;
+  --card:#ffffff;
+  --text:#333;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);}
+.navbar{background:var(--primary);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.nav-left{display:flex;align-items:center;gap:12px;}
+.logo{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#fff;padding:3px;border:2px solid #fff;}
+.brand-text{line-height:1.1;}
+.brand-text .subtitle{font-size:18px;text-align:center;opacity:.9;}
+.brand-text .title{font-size:20px;font-weight:700;letter-spacing:.5px;}
+.nav-right button{background:var(--danger);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer;}
+.container{padding:16px;}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.summary .box{background:var(--card);padding:14px;border-radius:12px;text-align:center;font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.08);}
+.summary b{display:block;margin-top:6px;font-size:15px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+.card{background:var(--card);padding:18px 14px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.08);text-align:center;cursor:pointer;transition:.25s;}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(0,0,0,.12);}
+.card b{display:block;margin-top:6px;font-size:15px;}
+.card small{display:block;margin-top:4px;font-size:12px;opacity:.7;}
+@media(max-width:480px){.summary{grid-template-columns:1fr;}}
+
+  </style>
+  <script type="module" src="js/firebase.js"></script>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="nav-left">
+    <img src="img/ims.png" class="logo" alt="logo">
+    <div class="brand-text">
+      <div class="subtitle">Koperasi</div>
+      <div class="title">ARFA DRIVER</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="box" style="background:#e8f5e9">
+      ⬇️ Kas Masuk
+      <b id="kasMasukDashboard">Rp 0</b>
+    </div>
+    <div class="box" style="background:#ffebee">
+      ⬆️ Kas Keluar
+      <b id="kasKeluarDashboard">Rp 0</b>
+    </div>
+    <div class="box" style="background:#e3f2fd">
+      💰 Saldo Akhir
+      <b id="saldoKasDashboard">Rp 0</b>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="grid">
+    <div class="card" onclick="location.href='input_kas.html'">💰<br><b>Input Kas</b><br><small>Kas masuk & keluar</small></div>
+    <div class="card" onclick="location.href='anggota.html'">👤<br><b>Anggota</b><br><small>Data anggota</small></div>
+    <div class="card" onclick="location.href='dashboard_laporan.html'">📊<br><b>Laporan</b><br><small>Rekap data</small></div>
+    <div class="card" onclick="location.href='transaksi.html'">💾<br><b>Transaksi</b><br><small>Transaksi</small></div>
+    <div class="card" onclick="location.href='backup.html'">💾<br><b>Backup</b><br><small>Backup & restore</small></div>
+     <div class="card" onclick="location.href='pencairan.html'">💾<br><b>pencairan</b><br><small>pencairan sukarela</small></div>
+
+    <div class="card" onclick="location.href='reset.html'">💾<br><b>reset</b><br><small>reset</small></div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+
+<script>
+// =========================
+// CEK LOGIN
+// =========================
+function cekLogin(){
+ const db = getDB();
+ if(!db.user){
+  location.href="index.html";
+ }
+}
+
+// =========================
+// FORMAT RUPIAH
+// =========================
+function rupiah(n){
+ return "Rp "+Number(n||0).toLocaleString("id-ID");
+}
+
+// =========================
+// LOAD DASHBOARD
+// =========================
+  
+async function loadDashboard(){
+  let kas = [];
+
+  if(window.loadKasFirebase){
+    kas = await loadKasFirebase(); // 🔥 FIREBASE
+  }else{
+    kas = getDB().kas;             // fallback local
+  }
+
+  let masuk = 0, keluar = 0;
+
+  kas.forEach(k=>{
+    if(k.jenis === "MASUK") masuk += Number(k.jumlah);
+    if(k.jenis === "KELUAR") keluar += Number(k.jumlah);
+  });
+
+  document.getElementById("kasMasukDashboard").innerText = rupiah(masuk);
+  document.getElementById("kasKeluarDashboard").innerText = rupiah(keluar);
+  document.getElementById("saldoKasDashboard").innerText = rupiah(masuk - keluar);
+}
+
+// =========================
+// INIT
+// =========================
+document.addEventListener("DOMContentLoaded", ()=>{
+ cekLogin();
+ loadDashboard();
+});
+</script>
+
+<!-- FIREBASE (DIPISAH & AMAN) -->
+
+</body>
+</html>

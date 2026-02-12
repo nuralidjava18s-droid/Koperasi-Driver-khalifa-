@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laporan Anggota</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f4f6f9;
+}
+header{
+  background:#1e90ff;
+  color:white;
+  padding:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header h3{margin:0}
+
+header button{
+  background:white;
+  color:#1e90ff;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.container{padding:15px}
+.card{
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:12px;
+}
+
+select{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  font-size:14px;
+}
+th,td{
+  padding:8px;
+  border-bottom:1px solid #eee;
+  text-align:center;
+}
+
+.lunas{color:green;font-weight:bold}
+.belum{color:red;font-weight:bold}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3>📊 Laporan Per Anggota</h3>
+  <button onclick="location.href='dashboard.html'">Dashboard</button>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <label>Pilih Anggota</label>
+  <select id="anggota"></select>
+</div>
+  
+  <button onclick="buatPDF()">📄 Buat PDF</button>
+<button onclick="kirimWA()">📤 Kirim / Download PDF</button>
+  <button onclick="bukaChrome()">🌐 Buka di Chrome</button>
+  
+  
+<div class="card" id="ringkasan">
+  <b>Ringkasan Pinjaman</b><br>
+  Total Pinjaman : <span id="totalPinjaman">Rp 0</span><br>
+  Total Angsuran : <span id="totalAngsuran">Rp 0</span><br>
+  Sisa Pinjaman  : <span id="sisaPinjaman">Rp 0</span><br>
+  Status         : <span id="statusPinjaman">-</span>
+</div>
+
+<div class="card">
+  <b>Rincian Angsuran</b>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Tanggal</th>
+  <th>Angsuran</th>
+</tr>
+</thead>
+<tbody id="listAngsuran"></tbody>
+</table>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="js/storage.js"></script>
+
+<script>
+function rupiah(n){
+ return "Rp " + Number(n||0).toLocaleString("id-ID");
+}
+
+/* ======================
+   LOAD ANGGOTA
+====================== */
+function loadAnggota(){
+ const db = getDB();
+ const sel = document.getElementById("anggota");
+ sel.innerHTML = "";
+
+ db.anggota.forEach(a=>{
+  sel.innerHTML += `<option value="${a.id}">${a.nama}</option>`;
+ });
+
+ loadLaporan();
+}
+
+
+
+/* ======================
+   LOAD LAPORAN
+====================== */
+function loadLaporan(){
+ const db = getDB();
+ const id = anggota.value;
+
+ const pinjaman = (db.pinjaman||[])
+   .find(p => p.anggota_id == id);
+
+ const tbody = document.getElementById("listAngsuran");
+ tbody.innerHTML = "";
+
+ if(!pinjaman){
+  totalPinjaman.innerText = rupiah(0);
+  totalAngsuran.innerText = rupiah(0);
+  sisaPinjaman.innerText = rupiah(0);
+  statusPinjaman.innerHTML = "-";
+  return;
+ }
+
+ let totalAngs = 0;
+
+ (db.kas||[])
+  .filter(k => k.keterangan === "Angsuran " + pinjaman.nama)
+  .forEach(k=>{
+    totalAngs += Number(k.jumlah||0);
+    tbody.innerHTML += `
+      <tr>
+        <td>${k.tanggal}</td>
+        <td>${rupiah(k.jumlah)}</td>
+      </tr>`;
+  });
+
+ totalPinjaman.innerText = rupiah(pinjaman.jumlah);
+ totalAngsuran.innerText = rupiah(totalAngs);
+ sisaPinjaman.innerText = rupiah(pinjaman.sisa);
+
+ statusPinjaman.innerHTML =
+  pinjaman.sisa === 0
+   ? "<span class='lunas'>LUNAS</span>"
+   : "<span class='belum'>BELUM LUNAS</span>";
+}
+ 
+  function formatTanggal(){
+ const d = new Date();
+ return d.toLocaleDateString("id-ID",{
+  day:"2-digit",
+  month:"long",
+  year:"numeric"
+ });
+}
+
+function formatTanggalFile(){
+ const d = new Date();
+ return d.toISOString().slice(0,10); // 2026-02-10
+}
+  
+  function buatPDF(){
+
+ const { jsPDF } = window.jspdf;
+ const doc = new jsPDF();
+
+ const db = getDB();
+ const anggotaSelect = document.getElementById("anggota");
+ const anggotaID = anggotaSelect.value;
+ const anggotaNama = anggotaSelect.selectedOptions[0].text;
+
+ const pinjaman = (db.pinjaman||[])
+   .find(p => p.anggota_id == anggotaID);
+
+ /* HEADER */
+ doc.setFontSize(14);
+ doc.text("LAPORAN ANGGOTA",14,15);
+
+ doc.setFontSize(11);
+ doc.text("Nama : " + anggotaNama,14,23);
+
+ doc.setFontSize(10);
+ doc.text("Tanggal : " + formatTanggal(),14,28);
+
+ if(!pinjaman){
+  doc.text("Tidak ada data pinjaman",14,36);
+  window.pdfAnggota = doc;
+  alert("PDF siap dikirim");
+  return;
+ }
+
+ let totalAngs = 0;
+ let rows = [];
+
+ (db.kas||[])
+  .filter(k => k.keterangan === "Angsuran " + pinjaman.nama)
+  .forEach(k=>{
+    totalAngs += Number(k.jumlah||0);
+    rows.push([k.tanggal, rupiah(k.jumlah)]);
+  });
+
+ /* RINGKASAN */
+ doc.autoTable({
+  startY:36,
+  theme:"grid",
+  head:[["Keterangan","Nilai"]],
+  body:[
+   ["Total Pinjaman", rupiah(pinjaman.jumlah)],
+   ["Total Angsuran", rupiah(totalAngs)],
+   ["Sisa Pinjaman", rupiah(pinjaman.sisa)],
+   ["Status", pinjaman.sisa==0 ? "LUNAS" : "BELUM LUNAS"]
+  ]
+ });
+
+ /* DETAIL */
+ doc.autoTable({
+  startY:doc.lastAutoTable.finalY + 10,
+  head:[["Tanggal","Jumlah"]],
+  body: rows.length ? rows : [["-","Belum ada angsuran"]],
+  styles:{fontSize:10}
+ });
+
+ // 🔥 SIMPAN UNTUK SHARE
+ window.pdfAnggota = doc;
+
+ alert("PDF berhasil dibuat, siap dikirim ke WhatsApp");
+}
+
+  function kirimWA(){
+
+  if(!window.pdfAnggota){
+    alert("Buat PDF dulu");
+    return;
+  }
+
+  const nama = document.getElementById("anggota")
+    .selectedOptions[0].text
+    .replace(/\s+/g,"_");
+
+  const fileName =
+    `Laporan_Anggota_${nama}_${formatTanggalFile()}.pdf`;
+
+  const blob = window.pdfAnggota.output("blob");
+
+  // === DOWNLOAD PAKSA (WEB2APP AMAN) ===
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert(
+    "PDF berhasil disimpan.\n\n" +
+    "Buka File Manager → Download → kirim via WhatsApp"
+  );
+}
+  function bukaChrome(){
+  window.open(location.href, "_system");
+}
+  
+/* INIT */
+  document.addEventListener("DOMContentLoaded", ()=>{
+  loadAnggota();
+
+  const anggotaEl = document.getElementById("anggota");
+  anggotaEl.addEventListener("change", loadLaporan);
+});
+
+</script>
+  </body>
+</html>
