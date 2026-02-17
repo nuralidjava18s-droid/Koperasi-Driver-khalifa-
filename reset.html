@@ -1,23 +1,33 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Factory Reset Koperasi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Factory Reset Koperasi</title>
 <style>
-body{
- font-family:Arial;
- background:#f4f6f9;
- padding:40px;
- text-align:center;
+ header{
+  background:linear-gradient(135deg,#1e90ff,#4facfe);
+  color:white;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-.card{
- background:white;
- padding:25px;
- border-radius:16px;
- max-width:400px;
- margin:auto;
- box-shadow:0 4px 12px rgba(0,0,0,.15);
+
+header h3{margin:0}
+
+header button{
+  background:white;
+  color:#1e90ff;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
 }
+ 
+
 input{
  width:100%;
  padding:12px;
@@ -38,6 +48,11 @@ button{
  cursor:pointer;
 }
 </style>
+ <header>
+  <h3>💸 Factory reset</h3>
+  <button onclick="location.href='dashboard.html'">Dashboard</button>
+</header>
+ 
 </head>
 
 <body>
